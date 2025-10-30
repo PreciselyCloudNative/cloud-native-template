@@ -54,6 +54,9 @@ pip-delete-this-directory.txt
 .pytest_cache/
 .coverage
 htmlcov/
-dist/
 *.egg-info/
 .uv/
+
+# Python build outputs (but NOT public/dist which contains design system assets)
+**/python/**/dist/
+build/dist/
