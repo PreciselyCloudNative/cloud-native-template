@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Intelligence Demo - Precisely Autocomplete & Data Graph APIs</title>
+    <link rel="stylesheet" href="dist/css/designsystem.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="welcome welcome-template">
+        <div class="d-flex flex-column p-7" role="main">
+            <div class="top-block text-center">
+                <h1 class="text-white mt-0">Location Intelligence Demo</h1>
+                <h3 class="text-white">
+                    <p>Explore Precisely's Autocomplete & Data Graph APIs</p>
+                </h3>
+                <p class="text-white" style="font-size: 18px; max-width: 900px; margin: 20px auto 0; line-height: 1.6; opacity: 0.95;">
+                    Search for any address with real-time autocomplete, then discover connected location data including parcels, buildings, addresses, and businesses—all powered by Precisely's cloud-native APIs.
+                </p>
+            </div>
+
+            <!-- Unified Address Search Section -->
+            <div class="content-section-hero">
+                <div class="content-container-hero">
+                    <div class="card-template">
+                        <h2 style="text-align: center; color: #8017e1; margin-bottom: 24px;">Address Search</h2>
+
+                        <!-- Mode Switcher -->
+                        <div style="max-width: 800px; margin: 0 auto 32px;">
+                            <div style="display: inline-flex; background: #f0f0f0; border-radius: 12px; padding: 4px;">
+                                <button
+                                    id="modeAutocomplete"
+                                    class="mode-btn active"
+                                    style="padding: 12px 24px; border: none; background: white; color: #8017e1; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                    onclick="switchMode('autocomplete')"
+                                >
+                                    Address Autocomplete
+                                </button>
+                                <button
+                                    id="modeNLP"
+                                    class="mode-btn"
+                                    style="padding: 12px 24px; border: none; background: transparent; color: #666; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                                    onclick="switchMode('nlp')"
+                                >
+                                    Natural Language Search
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Description Text -->
+                        <p id="modeDescription" style="text-align: center; font-size: 16px; color: #666; margin-bottom: 32px; max-width: 700px; margin-left: auto; margin-right: auto;">
+                            Type an address for real-time suggestions powered by Address Autocomplete API
+                        </p>
+
+                        <!-- Unified Search Container -->
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <!-- Search Input with Optional Button -->
+                            <div class="form-group">
+                                <input
+                                    type="text"
+                                    id="unifiedSearchInput"
+                                    class="form-control"
+                                    placeholder="Start typing an address (e.g., 123 Main St, New York)"
+                                    autocomplete="off"
+                                    style="width: 100%; font-size: 18px; padding: 16px; border: 2px solid #e0e0e0; border-radius: 8px; transition: border-color 0.3s; color: #333; background-color: #fff; height: 56px; line-height: 1.2;"
+                                    onfocus="this.style.borderColor='#8017e1'"
+                                    onblur="this.style.borderColor='#e0e0e0'"
+                                />
+
+                                <!-- Button Row -->
+                                <div style="display: flex; gap: 12px; margin-top: 12px; justify-content: center;">
+                                    <button
+                                        id="nlpSearchButton"
+                                        class="btn btn-secondary"
+                                        style="padding: 0 40px; font-size: 18px; font-weight: 600; white-space: nowrap; display: none; height: 48px; border-radius: 8px; min-width: 140px;"
+                                    >
+                                        Search
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Loading Indicator -->
+                            <div id="loadingIndicator" style="display: none; margin-top: 16px; text-align: center;">
+                                <span style="color: #8017e1; font-weight: 500;">
+                                    <svg style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px; animation: spin 1s linear infinite;" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" stroke="#8017e1" stroke-width="3" fill="none" stroke-dasharray="60" stroke-dashoffset="30"/>
+                                    </svg>
+                                    <span id="loadingText">Searching addresses...</span>
+                                </span>
+                            </div>
+
+                            <!-- Unified Results Container -->
+                            <div id="resultsContainer" style="margin-top: 20px;">
+                                <!-- Results will be displayed here -->
+                            </div>
+
+                            <!-- AI Address Locator Settings (only visible in NLP mode) -->
+                            <div id="glinerSettingsSection" style="display: none; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+                                <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+                                    <h4 style="color: #8017e1; margin-top: 0; margin-bottom: 16px; font-size: 18px;">AI Address Locator Settings</h4>
+                                    <!-- Confidence Threshold -->
+                                    <div>
+                                        <label style="font-weight: 500; color: #333; display: block; margin-bottom: 8px;">
+                                            Confidence Threshold: <span id="thresholdValue" style="color: #8017e1;">0.30</span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            id="glinerThreshold"
+                                            min="0.05"
+                                            max="0.95"
+                                            step="0.05"
+                                            value="0.30"
+                                            style="width: 100%; max-width: 400px; cursor: pointer;"
+                                        >
+                                        <div style="display: flex; justify-content: space-between; max-width: 400px; margin-top: 4px;">
+                                            <small style="color: #666;">0.05 (More entities)</small>
+                                            <small style="color: #666;">0.95 (Higher confidence)</small>
+                                        </div>
+                                        <small style="color: #666; display: block; margin-top: 8px;">
+                                            Lower threshold detects more entities, higher threshold is more conservative
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature Icons -->
+                        <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; text-align: center;">
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 600; color: #8017e1;">Autocomplete</div>
+                                    <div style="color: #666; margin-top: 4px; font-size: 14px;">Real-time address suggestions</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 600; color: #8017e1;">Data Graph</div>
+                                    <div style="color: #666; margin-top: 4px; font-size: 14px;">Connected location insights</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 20px; font-weight: 600; color: #8017e1;">GraphQL</div>
+                                    <div style="color: #666; margin-top: 4px; font-size: 14px;">Flexible query interface</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Features Section -->
+            <div class="mt-7 mb-6">
+                <h2 class="text-white text-center mb-6" style="font-size: 32px;">Integrated API Experience</h2>
+                <div class="d-flex flex-column flex-sm-row align-items-start justify-content-center text-white text-center">
+                    <div class="py-5 px-0 px-sm-6 flex-grow-1 flex-basis-0">
+                        <span class="icon-threecolumn">
+                            <svg viewBox="0 0 64 64" fill="currentColor">
+                                <path d="M32 4C16.5 4 4 16.5 4 32s12.5 28 28 28 28-12.5 28-28S47.5 4 32 4zm0 48c-11 0-20-9-20-20s9-20 20-20 20 9 20 20-9 20-20 20z"/>
+                                <path d="M42 24H32v-8h-4v12h14v-4z"/>
+                            </svg>
+                        </span>
+                        <h3 class="text-white" style="font-size: 24px; margin-top: 16px;">Smart Autocomplete</h3>
+                        <p style="text-align: center; font-size: 16px; line-height: 1.6;">
+                            Real-time address suggestions as you type with automatic fallback to Express Autocomplete for comprehensive global coverage.
+                        </p>
+                    </div>
+                    <div class="py-5 px-0 px-sm-6 flex-grow-1 flex-basis-0">
+                        <span class="icon-threecolumn">
+                            <svg viewBox="0 0 64 64" fill="currentColor">
+                                <path d="M56 20H36V8H28v12H8v4h20v12h-12v4h12v12h-12v4h12v8h8v-8h12v-4H36V40h12v-4H36V24h20z"/>
+                            </svg>
+                        </span>
+                        <h3 class="text-white" style="font-size: 24px; margin-top: 16px;">Connected Data Graph</h3>
+                        <p style="text-align: center; font-size: 16px; line-height: 1.6;">
+                            Explore relationships between parcels, buildings, addresses, and businesses with a single GraphQL query using Precisely IDs.
+                        </p>
+                    </div>
+                    <div class="py-5 px-0 px-sm-6 flex-grow-1 flex-basis-0">
+                        <span class="icon-threecolumn">
+                            <svg viewBox="0 0 64 64" fill="currentColor">
+                                <path d="M32 8c-8.8 0-16 7.2-16 16 0 12 16 32 16 32s16-20 16-32c0-8.8-7.2-16-16-16zm0 22c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z"/>
+                            </svg>
+                        </span>
+                        <h3 class="text-white" style="font-size: 24px; margin-top: 16px;">Visual Insights</h3>
+                        <p style="text-align: center; font-size: 16px; line-height: 1.6;">
+                            Interactive maps with parcel and building geometries, complete dashboards showing business locations and address details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="mt-7 text-center">
+                <h3 class="text-white mb-4" style="font-size: 24px;">Learn More About These APIs</h3>
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                    <a class="btn btn-secondary btn-lg" href="https://help.cloud.precisely.com/r/t/1009843853/2025-09-27/Precisely-Data-Integrity-Suite/disapi/Latest/en-US/Data-Integrity-Suite-APIs/Address-Autocomplete-Service" target="_blank" rel="noopener" style="padding: 14px 32px; font-size: 16px; font-weight: 600;">
+                        Autocomplete API Docs
+                    </a>
+                    <a class="btn btn-secondary btn-lg" href="https://help.cloud.precisely.com/r/t/1009843953/2025-09-27/Precisely-Data-Integrity-Suite/disapi/Latest/en-US/Data-Integrity-Suite-APIs/Data-Graph-Playground" target="_blank" rel="noopener" style="padding: 14px 32px; font-size: 16px; font-weight: 600;">
+                        Data Graph Playground
+                    </a>
+                    <a class="btn btn-secondary btn-lg" href="https://developer.cloud.precisely.com/home" target="_blank" rel="noopener" style="padding: 14px 32px; font-size: 16px; font-weight: 600;">
+                        Developer Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Footer -->
+    <footer class="footer-professional">
+        <div class="footer-links">
+            <a href="https://www.precisely.com/legal/terms-of-use">Terms of Use</a> |
+            <a href="https://www.precisely.com/legal">Legal</a> |
+            <a href="https://www.precisely.com/legal/privacy-notices">Privacy Notices</a> |
+            <a href="https://www.precisely.com/about-us/precisely-trust-center">Trust Center</a> |
+            <a href="https://www.precisely.com/legal/trademarks">Trademarks</a> |
+            <a href="https://www.precisely.com/sitemap">Sitemap</a> |
+            <img class="privacy-icon" src="data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiIHk9IjBweCIKCSB2aWV3Qm94PSIwIDAgMzAgMTQiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDMwIDE0OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+Cgkuc3Qwe2ZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO2ZpbGw6I0ZGRkZGRjt9Cgkuc3Qxe2ZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO2ZpbGw6IzAwNjZGRjt9Cgkuc3Qye2ZpbGw6I0ZGRkZGRjt9Cgkuc3Qze2ZpbGw6IzAwNjZGRjt9Cjwvc3R5bGU+CjxnPgoJPGcgaWQ9ImZpbmFsLS0tZGVjLjExLTIwMjBfMV8iPgoJCTxnIGlkPSJfeDMwXzIwOC1vdXItdG9nZ2xlXzJfIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTI3NS4wMDAwMDAsIC0yMDAuMDAwMDAwKSI+CgkJCTxnIGlkPSJGaW5hbC1Db3B5LTJfMl8iIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyNzUuMDAwMDAwLCAyMDAuMDAwMDAwKSI+CgkJCQk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNy40LDEyLjhoNi44bDMuMS0xMS42SDcuNEM0LjIsMS4yLDEuNiwzLjgsMS42LDdTNC4yLDEyLjgsNy40LDEyLjh6Ii8+CgkJCTwvZz4KCQk8L2c+Cgk8L2c+Cgk8ZyBpZD0iZmluYWwtLS1kZWMuMTEtMjAyMCI+CgkJPGcgaWQ9Il94MzBfMjA4LW91ci10b2dnbGUiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xMjc1LjAwMDAwMCwgLTIwMC4wMDAwMDApIj4KCQkJPGcgaWQ9IkZpbmFsLUNvcHktMiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTI3NS4wMDAwMDAsIDIwMC4wMDAwMDApIj4KCQkJCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMi42LDBINy40Yy0zLjksMC03LDMuMS03LDdzMy4xLDcsNyw3aDE1LjJjMy45LDAsNy0zLjEsNy03UzI2LjQsMCwyMi42LDB6IE0xLjYsN2MwLTMuMiwyLjYtNS44LDUuOC01LjgKCQkJCQloOS45bC0zLjEsMTEuNkg3LjRDNC4yLDEyLjgsMS42LDEwLjIsMS42LDd6Ii8+CgkJCQk8cGF0aCBpZD0ieCIgY2xhc3M9InN0MiIgZD0iTTI0LjYsNGMwLjIsMC4yLDAuMiwwLjYsMCwwLjhsMCwwTDIyLjUsN2wyLjIsMi4yYzAuMiwwLjIsMC4yLDAuNiwwLDAuOGMtMC4yLDAuMi0wLjYsMC4yLTAuOCwwCgkJCQkJbDAsMGwtMi4yLTIuMkwxOS41LDEwYy0wLjIsMC4yLTAuNiwwLjItMC44LDBjLTAuMi0wLjItMC4yLTAuNiwwLTAuOGwwLDBMMjAuOCw3bC0yLjItMi4yYy0wLjItMC4yLTAuMi0wLjYsMC0wLjgKCQkJCQljMC4yLTAuMiwwLjYtMC4yLDAuOCwwbDAsMGwyLjIsMi4yTDIzLjgsNEMyNCwzLjgsMjQuNCwzLjgsMjQuNiw0eiIvPgoJCQkJPHBhdGggaWQ9InkiIGNsYXNzPSJzdDMiIGQ9Ik0xMi43LDQuMWMwLjIsMC4yLDAuMywwLjYsMC4xLDAuOGwwLDBMOC42LDkuOEM4LjUsOS45LDguNCwxMCw4LjMsMTBjLTAuMiwwLjEtMC41LDAuMS0wLjctMC4xbCwwCgkJCQkJTDUuNCw3LjdjLTAuMi0wLjItMC4yLTAuNiwwLTAuOGMwLjItMC4yLDAuNi0wLjIsMC44LDBsMCwwTDgsOC42bDMuOC00LjVDMTIsMy45LDEyLjQsMy45LDEyLjcsNC4xeiIvPgoJCQk8L2c+CgkJPC9nPgoJPC9nPgo8L2c+Cjwvc3ZnPgo="/> <a href="https://www.precisely.com/legal/privacy-policy/your-privacy-choices">Your Privacy Choices</a> |
+            <a href="https://www.precisely.com/legal/california-privacy-notices">California Privacy Notices</a> |
+            <a href="javascript:void(0)" onclick="openCookieSettings()" id="ot-sdk-btn" class="ot-sdk-show-settings">Cookie Settings</a>
+        </div>
+        <p class="footer-copyright">&copy; 2015, 2025 Precisely. All rights reserved.</p>
+    </footer>
+
+    <script src="js/onetrust.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

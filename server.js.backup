@@ -1,0 +1,523 @@
+const express = require('express');
+const cors = require('cors');
+const fetch = require('node-fetch');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Configuration for address extraction services
+let USE_LLM_EXTRACTION = process.env.USE_LLM_EXTRACTION === 'true';
+const GLINER_SERVICE_URL = process.env.GLINER_SERVICE_URL || 'http://localhost:5001';
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('.')); // Serve static files from current directory
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running' });
+});
+
+
+/**
+ * Regex-based filler word removal (fallback method)
+ */
+function regexCleanQuery(query) {
+    let cleaned = query.trim();
+
+    // Remove common filler patterns (multiple passes to catch cascading)
+    for (let i = 0; i < 3; i++) {  // Multiple passes to handle cascading removals
+        cleaned = cleaned
+            // Remove conversational starts
+            .replace(/^(help!?\s+)/i, '')                    // "help!" or "help "
+            .replace(/^(please\s+)/i, '')                     // "please "
+            .replace(/^(can you\s+)/i, '')                    // "can you "
+            .replace(/^(could you\s+)/i, '')                  // "could you "
+            .replace(/^(do you know\s+)/i, '')                // "do you know "
+            .replace(/^(is there\s+)/i, '')                   // "is there "
+            .replace(/^(are there\s+)/i, '')                  // "are there "
+            .replace(/^(give me\s+)/i, '')                    // "give me "
+            .replace(/^(find me\s+)/i, '')                    // "find me "
+            .replace(/^(show me\s+)/i, '')                    // "show me "
+            .replace(/^(i need\s+)/i, '')                     // "i need "
+            .replace(/^(i want\s+)/i, '')                     // "i want "
+            .replace(/^(i'm at\s+)/i, '')                     // "i'm at "
+            .replace(/^(i am at\s+)/i, '')                    // "i am at "
+            .replace(/^(i had\s+)/i, '')                      // "i had "
+            .replace(/^(i have\s+)/i, '')                     // "i have "
+            .replace(/^(i got\s+)/i, '')                      // "i got "
+            .replace(/^(there was\s+)/i, '')                  // "there was "
+            .replace(/^(there is\s+)/i, '')                   // "there is "
+
+            // Remove accident/event descriptions
+            .replace(/^(a\s+)?fender bender\s+/i, '')         // "fender bender" or "a fender bender"
+            .replace(/^(an?\s+)?accident\s+/i, '')            // "accident" or "an accident"
+            .replace(/^(an?\s+)?incident\s+/i, '')            // "incident" or "an incident"
+            .replace(/^(an?\s+)?emergency\s+/i, '')           // "emergency" or "an emergency"
+
+            // Remove articles at start
+            .replace(/^(a\s+)/i, '')                          // "a " at start
+            .replace(/^(an\s+)/i, '')                         // "an " at start
+            .replace(/^(all the\s+)/i, '')                    // "all the " at start
+            .replace(/^(all\s+)/i, '')                        // "all " at start
+            .replace(/^(any\s+)/i, '')                        // "any " at start
+
+            // Remove filler words in middle
+            .replace(/\s+(all the)\s+/gi, ' ')                // " all the " in middle
+            .replace(/\s+(all)\s+/gi, ' ')                    // " all " in middle
+            .replace(/\s+any\s+/gi, ' ')                      // " any " in middle
+            .replace(/\bthe\s+/gi, '')                        // "the " anywhere
+            .replace(/\s+and\s+/gi, ' ')                      // " and " → " "
+            .replace(/\s+in\s+/gi, ' ')                       // " in " → " "
+            .replace(/\s+on\s+/gi, ' ')                       // " on " → " "
+            .replace(/\s+at\s+/gi, ' ')                       // " at " → " "
+            .replace(/\s+by\s+/gi, ' ')                       // " by " → " "
+            .replace(/\s+near\s+/gi, ' ')                     // " near " → " "
+            .replace(/\s+around\s+/gi, ' ')                   // " around " → " "
+            .replace(/\s+area\b/gi, '')                       // " area" → ""
+            .replace(/[?!]+\s*/g, ' ')                        // "?" or "!" → " "
+            .trim()
+            .replace(/\s+/g, ' ');                            // Normalize spaces
+    }
+
+    return cleaned;
+}
+
+/**
+ * GLiNER extraction with regex fallback (for default search)
+ * Flow: GLiNER → Regex
+ */
+async function extractAddressWithGLiNER(naturalLanguageQuery, threshold = 0.3) {
+    try {
+        // === Try GLiNER extraction ===
+        console.log(`🎯 Attempting GLiNER extraction for: "${naturalLanguageQuery}" [threshold: ${threshold}]`);
+
+        const glinerResponse = await fetch(`${GLINER_SERVICE_URL}/api/v1/extract`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: naturalLanguageQuery,
+                threshold: threshold
+            }),
+            timeout: 5000  // 5 second timeout
+        });
+
+        if (glinerResponse.ok) {
+            const glinerData = await glinerResponse.json();
+
+            // Trust GLiNER's output unless it's empty
+            // New GLiNER microservice returns 'address' instead of 'extracted'
+            const extractedAddress = glinerData.address || glinerData.extracted;
+            const componentCount = glinerData.components ? glinerData.components.length : glinerData.entity_count;
+
+            if (glinerData.success && extractedAddress && extractedAddress.trim().length > 0) {
+                console.log(`✅ GLiNER extraction successful: "${naturalLanguageQuery}" → "${extractedAddress}" [entities: ${componentCount}]`);
+                return extractedAddress;
+            } else {
+                console.warn(`⚠️  GLiNER returned empty or no result, falling back to regex`);
+            }
+        } else {
+            console.warn(`⚠️  GLiNER service not available (${glinerResponse.status}), falling back to regex`);
+        }
+    } catch (glinerError) {
+        console.warn(`⚠️  GLiNER request failed: ${glinerError.message}, falling back to regex`);
+    }
+
+    // === FALLBACK: Use regex-based cleaning ===
+    const regexCleaned = regexCleanQuery(naturalLanguageQuery);
+    console.log(`✂️  Regex fallback: "${naturalLanguageQuery}" → "${regexCleaned}"`);
+    return regexCleaned;
+}
+
+
+/**
+ * Generic API Proxy Pattern
+ *
+ * This is a reusable pattern for creating secure API proxies.
+ * The backend acts as a security layer to hide API keys from the browser.
+ *
+ * To add a new API endpoint:
+ * 1. Copy one of the example endpoints below
+ * 2. Update the endpoint path (e.g., '/api/your-endpoint')
+ * 3. Update the Precisely API URL
+ * 4. Customize error messages if needed
+ *
+ * All endpoints follow this pattern:
+ *   Browser → /api/* → server.js (adds API key) → Precisely Cloud APIs
+ */
+
+// Example Proxy Endpoint 1: Autocomplete API
+app.post('/api/autocomplete', async (req, res) => {
+    try {
+        // Validate API key is configured
+        if (!process.env.PRECISELY_API_KEY) {
+            console.error('PRECISELY_API_KEY is not configured in environment variables');
+            return res.status(500).json({
+                error: 'Server configuration error',
+                message: 'API key not configured. Please set PRECISELY_API_KEY in .env file'
+            });
+        }
+
+        // Forward the request to Precisely API
+        const response = await fetch('https://api.cloud.precisely.com/v1/autocomplete', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Apikey ${process.env.PRECISELY_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        // Check if the response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Precisely API error:', response.status, errorText);
+            return res.status(response.status).json({
+                error: 'API request failed',
+                message: `Precisely API returned ${response.status}`,
+                details: errorText
+            });
+        }
+
+        // Parse and return the response
+        const data = await response.json();
+        res.json(data);
+
+    } catch (error) {
+        console.error('Error in autocomplete proxy:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// Example Proxy Endpoint 2: Express Autocomplete API (fallback)
+app.post('/api/express-autocomplete', async (req, res) => {
+    try {
+        // Validate API key is configured
+        if (!process.env.PRECISELY_API_KEY) {
+            console.error('PRECISELY_API_KEY is not configured in environment variables');
+            return res.status(500).json({
+                error: 'Server configuration error',
+                message: 'API key not configured. Please set PRECISELY_API_KEY in .env file'
+            });
+        }
+
+        // Forward the request to Precisely Express Autocomplete API
+        const response = await fetch('https://api.cloud.precisely.com/v1/express-autocomplete', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Apikey ${process.env.PRECISELY_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+
+        // Check if the response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Precisely Express Autocomplete API error:', response.status, errorText);
+            return res.status(response.status).json({
+                error: 'API request failed',
+                message: `Precisely Express Autocomplete API returned ${response.status}`,
+                details: errorText
+            });
+        }
+
+        // Parse and return the response
+        const data = await response.json();
+        res.json(data);
+
+    } catch (error) {
+        console.error('Error in express-autocomplete proxy:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+// NLP Search Endpoint - Natural Language Address Search
+app.post('/api/nlp-search', async (req, res) => {
+    try {
+        // Validate API key is configured
+        if (!process.env.PRECISELY_API_KEY) {
+            console.error('PRECISELY_API_KEY is not configured in environment variables');
+            return res.status(500).json({
+                error: 'Server configuration error',
+                message: 'API key not configured. Please set PRECISELY_API_KEY in .env file'
+            });
+        }
+
+        // Extract the natural language query and optional threshold
+        const { query, threshold } = req.body;
+
+        if (!query || typeof query !== 'string' || query.trim().length === 0) {
+            return res.status(400).json({
+                error: 'Bad request',
+                message: 'Query is required and must be a non-empty string'
+            });
+        }
+
+        // Clean the query - remove extra whitespace
+        let cleanedQuery = query.trim();
+
+        // Use threshold from request or default to 0.3
+        const glinerThreshold = threshold !== undefined ? parseFloat(threshold) : 0.3;
+
+        console.log(`NLP Search query: "${cleanedQuery}" [GLiNER threshold: ${glinerThreshold}]`);
+
+        // Use GLiNER to extract address information (with regex fallback)
+        console.log('🎯 Attempting GLiNER address extraction...');
+        const extractedQuery = await extractAddressWithGLiNER(cleanedQuery, glinerThreshold);
+
+        // Build the request payload for Express Autocomplete
+        // The Express Autocomplete API is designed to handle natural language queries
+        const payload = {
+            preferences: {
+                maxResults: 5,
+                returnAllInfo: true,
+                customPreferences: {
+                    SEARCH_TYPE: "AUTO"
+                }
+            },
+            address: {
+                addressLines: [extractedQuery],  // Use LLM-extracted query if enabled
+                country: "USA"
+            }
+        };
+
+        // Call Precisely Express Autocomplete API
+        const response = await fetch('https://api.cloud.precisely.com/v1/express-autocomplete', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Apikey ${process.env.PRECISELY_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        // Check if the response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Precisely Express Autocomplete API error:', response.status, errorText);
+            return res.status(response.status).json({
+                error: 'API request failed',
+                message: `Precisely Express Autocomplete API returned ${response.status}`,
+                details: errorText
+            });
+        }
+
+        // Parse and return the response
+        const data = await response.json();
+
+        // Add metadata about the query
+        const enrichedResponse = {
+            ...data,
+            _query_info: {
+                original_query: query,
+                cleaned_query: cleanedQuery,
+                extracted_query: extractedQuery,
+                gliner_threshold: glinerThreshold,
+                country: "USA",
+                max_results: 5
+            }
+        };
+
+        console.log(`NLP Search found ${data.response?.predictions?.length || 0} results`);
+
+        res.json(enrichedResponse);
+
+    } catch (error) {
+        console.error('Error in NLP search:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+
+// Data Graph GraphQL API Endpoint
+app.post('/api/data-graph', async (req, res) => {
+    try {
+        // Validate API key is configured
+        if (!process.env.PRECISELY_API_KEY) {
+            console.error('PRECISELY_API_KEY is not configured in environment variables');
+            return res.status(500).json({
+                error: 'Server configuration error',
+                message: 'API key not configured. Please set PRECISELY_API_KEY in .env file'
+            });
+        }
+
+        // Extract PB_KEY from request body
+        const { pbKey } = req.body;
+
+        if (!pbKey) {
+            return res.status(400).json({
+                error: 'Bad request',
+                message: 'PB_KEY is required'
+            });
+        }
+
+        // Build the GraphQL query
+        const graphqlQuery = {
+            query: `query buildingsAddressesByParcel {
+  getById(id: "${pbKey}", queryType: PRECISELY_ID) {
+    parcels {
+      data {
+        parcelID
+        geometry
+        buildings {
+          data {
+            buildingID
+            geometry
+            addresses {
+              metadata {
+                count
+              }
+              data {
+                preciselyID
+                addressNumber
+                streetName
+                unit
+                places {
+                  metadata {
+                    count
+                  }
+                  data {
+                    PBID
+                    pointOfInterestID
+                    preciselyID
+                    parentPreciselyID
+                    businessName
+                    brandName
+                    tradeName
+                    franchiseName
+                    countryIsoAlpha3Code
+                    localityName
+                    city
+                    admin2
+                    admin1
+                    admin1ShortName
+                    addressNumber
+                    streetName
+                    postalCode
+                    formattedAddress
+                    longitude
+                    latitude
+                    countryCallingCode
+                    phone
+                    fax
+                    email
+                    web
+                    lineOfBusiness
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`,
+            variables: {}
+        };
+
+        // Forward the request to Precisely Data Graph API
+        const response = await fetch('https://api.cloud.precisely.com/data-graph/graphql', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Apikey ${process.env.PRECISELY_API_KEY}`,
+                'Content-Type': 'application/json',
+                'cache-disabled': 'true'
+            },
+            body: JSON.stringify(graphqlQuery)
+        });
+
+        // Check if the response is ok
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Precisely Data Graph API error:', response.status, errorText);
+            return res.status(response.status).json({
+                error: 'API request failed',
+                message: `Precisely Data Graph API returned ${response.status}`,
+                details: errorText
+            });
+        }
+
+        // Parse and return the response
+        const data = await response.json();
+        res.json(data);
+
+    } catch (error) {
+        console.error('Error in data-graph proxy:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Add your custom API endpoints here following the pattern above
+ *
+ * Example template for a new endpoint:
+ *
+ * app.post('/api/your-endpoint', async (req, res) => {
+ *     try {
+ *         if (!process.env.PRECISELY_API_KEY) {
+ *             return res.status(500).json({
+ *                 error: 'Server configuration error',
+ *                 message: 'API key not configured'
+ *             });
+ *         }
+ *
+ *         const response = await fetch('https://api.cloud.precisely.com/v1/your-api', {
+ *             method: 'POST',
+ *             headers: {
+ *                 'Authorization': `Apikey ${process.env.PRECISELY_API_KEY}`,
+ *                 'Content-Type': 'application/json'
+ *             },
+ *             body: JSON.stringify(req.body)
+ *         });
+ *
+ *         if (!response.ok) {
+ *             const errorText = await response.text();
+ *             console.error('API error:', response.status, errorText);
+ *             return res.status(response.status).json({
+ *                 error: 'API request failed',
+ *                 message: `API returned ${response.status}`,
+ *                 details: errorText
+ *             });
+ *         }
+ *
+ *         const data = await response.json();
+ *         res.json(data);
+ *
+ *     } catch (error) {
+ *         console.error('Error:', error);
+ *         res.status(500).json({
+ *             error: 'Internal server error',
+ *             message: error.message
+ *         });
+ *     }
+ * });
+ */
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`\n✅ Precisely Cloud Native Template Server running on http://localhost:${PORT}`);
+    console.log(`📍 Autocomplete API: http://localhost:${PORT}/api/autocomplete`);
+    console.log(`⚡ Express Autocomplete API: http://localhost:${PORT}/api/express-autocomplete`);
+    console.log(`🤖 NLP Search API: http://localhost:${PORT}/api/nlp-search`);
+    console.log(`🔗 Data Graph API: http://localhost:${PORT}/api/data-graph`);
+    console.log(`🔒 API key is securely stored in environment variables`);
+    console.log(`\n🌐 Open http://localhost:${PORT} in your browser\n`);
+});

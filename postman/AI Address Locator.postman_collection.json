@@ -1,0 +1,136 @@
+{
+	"info": {
+		"_postman_id": "22eaefcd-ed07-4940-82e4-1afb886a2b72",
+		"name": "AI Address Locator",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "9831141"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/api/v1/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"v1",
+						"health"
+					]
+				},
+				"description": "Generated from cURL: curl http://localhost:5001/health"
+			},
+			"response": []
+		},
+		{
+			"name": "Address Extract",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"I'm grabbing coffee at Victrola on East Pike Street before our meeting. Do you want me to pick you up a latte or something on my way over?\",\n  \"threshold\": 0.3\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/api/v1/extract",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"v1",
+						"extract"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST http://localhost:5001/extract \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\": \"help! I am at a chevron on mars hill road by the publix\"}'"
+			},
+			"response": []
+		},
+		{
+			"name": "Address PII Extract",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"query\": \"Hey Tim McKenzie here! I'm grabbing coffee at Victrola on East Pike Street before our meeting. Do you want me to pick you up a latte or something on my way over, if yes mind confirming if the 4587568765891254 is your credit card number?\",\n  \"threshold\": 0.3\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5001/api/v1/pii",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"v1",
+						"pii"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST http://localhost:5001/extract \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"query\": \"help! I am at a chevron on mars hill road by the publix\"}'"
+			},
+			"response": []
+		},
+		{
+			"name": "Docs",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/api/v1/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"v1",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Model info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/api/v1/model-info",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"v1",
+						"model-info"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

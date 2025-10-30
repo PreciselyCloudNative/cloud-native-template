@@ -1,0 +1,431 @@
+/* Precisely Cloud Native Template Styles - CloudNativeV2 Theme */
+
+/* ============================================
+   COLOR THEME - CloudNative V2
+   ============================================
+   Primary Gradient: #8017e1 to #39006b (Purple)
+   Background: Purple gradient
+   Footer: #3A0069 (Dark Purple)
+   Text on Purple: White
+   Accent: White with purple background
+   ============================================ */
+
+/* Load Precisely Fonts */
+@font-face {
+    font-family: "Precisely Demi";
+    src: url(https://www.precisely.com/app/themes/precisely/dist/fonts/Precisely-Demi.woff) format("woff");
+    font-weight: 600;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Precisely_Regular', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* ============================================
+   WELCOME HERO SECTION
+   ============================================ */
+.welcome {
+    background-image: linear-gradient(135deg, #8017e1 0%, #39006b 100%);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.welcome-template {
+    padding: 0;
+}
+
+/* Top Block - Welcome Text */
+.top-block {
+    padding-top: 60px;
+    padding-bottom: 40px;
+}
+
+.top-block h1 {
+    font-family: 'Precisely Demi', 'Precisely_Bold', sans-serif;
+    font-size: 3rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+}
+
+.top-block h3 {
+    font-family: 'Precisely_Light', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin: 0;
+}
+
+.top-block h3 p {
+    margin: 0;
+}
+
+/* ============================================
+   CONTENT SECTION
+   ============================================ */
+.content-section-hero {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+    width: 100%;
+}
+
+.content-container-hero {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.card-template {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.card-template:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.card-template h2 {
+    color: #8017e1;
+    font-family: 'Precisely Demi', 'Precisely_Bold', sans-serif;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    margin-top: 0;
+}
+
+.card-template p {
+    color: #333;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.feature-list li {
+    padding: 12px 0 12px 35px;
+    position: relative;
+    color: #333;
+    font-size: 1.05rem;
+}
+
+.feature-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #8017e1;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* ============================================
+   THREE COLUMN ICONS SECTION
+   ============================================ */
+.icon-threecolumn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.icon-threecolumn svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Feature Columns */
+.flex-basis-0 {
+    flex-basis: 0;
+}
+
+.py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+}
+
+.px-sm-6 {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn-secondary {
+    background-color: white;
+    color: #8017e1;
+    border: 2px solid white;
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 8px;
+}
+
+.btn-secondary:hover {
+    background-color: transparent;
+    color: white;
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+}
+
+.btn-primary {
+    background-color: #8017e1;
+    color: white;
+    border: 2px solid #8017e1;
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 8px;
+}
+
+.btn-primary:hover {
+    background-color: #39006b;
+    border-color: #39006b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+}
+
+/* ============================================
+   PROFESSIONAL FOOTER
+   ============================================ */
+.footer-professional {
+    background-color: #3A0069;
+    color: #fff;
+    padding: 30px 20px;
+    margin-top: 60px;
+    font-size: 0.9rem;
+}
+
+.footer-links {
+    text-align: center;
+    margin-bottom: 15px;
+    line-height: 1.8;
+}
+
+.footer-links a {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+    margin: 0 2px;
+}
+
+.footer-links a:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.privacy-icon {
+    width: 30px;
+    vertical-align: middle;
+    margin: 0 5px;
+}
+
+.footer-copyright {
+    text-align: center;
+    color: hsla(0, 0%, 100%, .5);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.text-center {
+    text-align: center;
+}
+
+.mt-7 {
+    margin-top: 4rem !important;
+}
+
+.mb-7 {
+    margin-bottom: 4rem !important;
+}
+
+.p-7 {
+    padding: 4rem !important;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 768px) {
+    .top-block h1 {
+        font-size: 2rem;
+    }
+
+    .top-block h3 {
+        font-size: 1.2rem;
+    }
+
+    .card-template {
+        padding: 30px 20px;
+    }
+
+    .card-template h2 {
+        font-size: 1.5rem;
+    }
+
+    .icon-threecolumn {
+        width: 60px;
+        height: 60px;
+    }
+
+    .px-sm-6 {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .py-5 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    .btn-secondary,
+    .btn-primary {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .top-block {
+        padding-top: 40px;
+        padding-bottom: 30px;
+    }
+
+    .top-block h1 {
+        font-size: 1.75rem;
+    }
+
+    .top-block h3 {
+        font-size: 1rem;
+    }
+
+    .footer-links {
+        font-size: 0.85rem;
+    }
+
+    .card-template {
+        padding: 25px 15px;
+    }
+}
+
+/* ============================================
+   INPUT PLACEHOLDER STYLING
+   ============================================ */
+#unifiedSearchInput {
+    color: #333 !important;
+}
+
+#unifiedSearchInput::placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+#unifiedSearchInput::-webkit-input-placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+#unifiedSearchInput::-moz-placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+#unifiedSearchInput:-ms-input-placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+/* Mode switcher button hover effects */
+.mode-btn:hover {
+    opacity: 0.8;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.top-block,
+.content-section-hero,
+.d-flex.flex-column.flex-sm-row {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.content-section-hero {
+    animation-delay: 0.2s;
+    animation-fill-mode: both;
+}
+
+.d-flex.flex-column.flex-sm-row {
+    animation-delay: 0.4s;
+    animation-fill-mode: both;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Address Input Field - Force dark text color */
+#addressInput {
+    color: #333 !important;
+    background-color: #fff !important;
+    -webkit-text-fill-color: #333 !important;
+}
+
+#addressInput::placeholder {
+    color: #999 !important;
+    opacity: 1 !important;
+}
+
+#addressInput:focus {
+    color: #333 !important;
+    background-color: #fff !important;
+    -webkit-text-fill-color: #333 !important;
+}

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: precisely-cloud-native:latest
+    container_name: precisely-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Optional: Add volume for logs if needed
+    # volumes:
+    #   - ./logs:/app/logs
+
+# Optional: Add GLiNER service if running in Docker
+# Uncomment to run GLiNER alongside the main app
+#
+# gliner:
+#   image: python:3.11-slim
+#   container_name: precisely-gliner
+#   working_dir: /app
+#   volumes:
+#     - ../ai-address-locator:/app
+#   ports:
+#     - "5001:5001"
+#   command: python run.py
+#   restart: unless-stopped
+#   healthcheck:
+#     test: ["CMD", "curl", "-f", "http://localhost:5001/api/v1/health"]
+#     interval: 30s
+#     timeout: 10s
+#     retries: 3
